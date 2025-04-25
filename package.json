@@ -1,0 +1,20 @@
+{
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node --no-warnings=ExperimentalWarning .",
+    "register": "node scripts/deploy.js",
+    "validate": "node scripts/validate.js",
+    "setup": "touch .env && npm i"
+  },
+  "dependencies": {
+    "discord.js": "^14.18.0",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "validate-npm-package-name": "^6.0.0"
+  }
+}
