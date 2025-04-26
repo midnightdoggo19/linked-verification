@@ -13,6 +13,7 @@ const path = require('node:path');
 const { logger } = require('./functions');
 const requestIp = require('request-ip');
 // const favicon = require('serve-favicon');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const client = new Client({
