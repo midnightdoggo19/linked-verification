@@ -11,6 +11,7 @@ const {
 const fs = require('node:fs');
 const path = require('node:path');
 const { logger } = require('./functions');
+const requestIp = require('request-ip');
 
 const app = express();
 const client = new Client({
@@ -74,12 +75,29 @@ client.login(process.env.TOKEN);
 
 // --- EXPRESS ---
 
-app.get('/', (req, res) => {
+app.use(favicon(path.join(__dirname, 'public', 'assets/favicon.ico')));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(requestIp.mw());
+app.set('trust proxy', 1);
+
+const rootLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100
+});
+
+app.use((req, res, next) => {
+    logger.info(`Request from ${req.clientIp}: ${req.method} ${req.url}`);
+    res.setHeader('X-Robots-Tag', 'noindex');
+    next();
+});
+
+app.get('/', rootLimiter, (req, res) => {
   const oauthUrl = `https://discord.com/oauth2/authorize?client_id=${process.env.ID}&response_type=code&scope=identify+guilds+role_connections.write&redirect_uri=${encodeURIComponent(process.env.REDIRECT)}`;
   res.send(`<a href="${oauthUrl}">Click here verify to your Discord account!</a>`);
 });
 
-app.get('/oauth/callback', async (req, res) => {
+app.get('/oauth/callback', rootLimiter, async (req, res) => {
     const code = req.query.code;
     const state = req.query.state;
 
@@ -110,7 +128,7 @@ app.get('/oauth/callback', async (req, res) => {
               Authorization: `Bearer ${accessToken}`
             }
         }).then(res => res.json());
-        
+
         // if (!guilds.some(g => g.id == process.env.GUILDID)) { res.status(403).send('No can do!'); return; } // idk
         if (!process.env.GUILDID in guilds) { res.status(403).send('No can do!'); return; } // temp
     
@@ -137,9 +155,19 @@ app.get('/oauth/callback', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send('❌ Error during OAuth2 flow');
-    }  
+    }
+});
+
+app.get('/api/info/health', rootLimiter, (req, res) => {
+    res.json({
+        status: 'ok',
+        uptime: process.uptime(),
+        memoryUsage: process.memoryUsage(),
+        nodeVersion: process.version,
+        logLevel: process.env.LOGLEVEL
+    });
 });
 
 app.listen(process.env.PORT, process.env.ADDRESS || `127.0.0.1`, () => {
-  console.log(`Server running at http://${process.env.ADDRESS || `127.0.0.1`}:${process.env.PORT}`);
+    console.log(`Server running at http://${process.env.ADDRESS || `127.0.0.1`}:${process.env.PORT}`);
 });
