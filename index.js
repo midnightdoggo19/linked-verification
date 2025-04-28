@@ -132,7 +132,7 @@ app.get('/oauth/callback', rootLimiter, async (req, res) => {
         }).then(res => res.json());
 
         // if (!guilds.some(g => g.id == process.env.GUILDID)) { res.status(403).send('No can do!'); return; } // idk
-        if (!process.env.GUILDID in guilds) { res.status(403).send('No can do!'); return; } // temp
+        if (!process.env.GUILDID in JSON.stringify(guilds)) { res.status(403).send('No can do!'); return; } // temp
     
         // update metadata
         const metadataBody = {
